@@ -32,6 +32,9 @@ jobs:
       - name: Build jar
         run: ./gradlew build
 
+      - name: Build jar
+        run: find .
+
       - name: Build image
         run: docker build . --file Dockerfile --tag $IMAGE_NAME
 
