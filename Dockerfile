@@ -1,7 +1,28 @@
-# Run-time image that makes the final image
-FROM gcr.io/distroless/java:11
-COPY build/libs/spring-boot-admin-2.2.3.jar /app/app.jar
-EXPOSE 8080
+FROM openjdk:8-jdk-alpine as build
 
-# When using distroless, entrypoint must be in vector form.
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+COPY .gradle/     /app/.gradle/
+COPY gradle/      /app/gradle/
+COPY build.gradle /app/build.gradle
+COPY gradlew      /app/gradlew
+WORKDIR /app
+
+RUN ./gradlew wrapper && \
+    ./gradlew dependencies
+
+COPY Dockerfile   /app/Dockerfile
+COPY src/         /app/src/
+
+RUN ./gradlew bootJar
+
+#
+# Using a distroless base reduced the image size
+# from 415MB to 235MB
+#
+
+FROM gcr.io/distroless/java:11
+ARG JARNAME=spring-boot-admin-2.2.3
+ARG PORT=8080
+COPY --from=build /app /app
+WORKDIR /app
+EXPOSE ${PORT}
+ENTRYPOINT ["java","-jar","/app/build/libs/${JARNAME}.jar"]
